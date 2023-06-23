@@ -5,22 +5,46 @@ from Email import SendMail
 import time
 import threading
 import webbrowser
+import re
+import Factory
+
+urls = []
+
+file_path_prod = "produse.txt"
+
+def extract_products_links(file_path):
+    with open(file_path, "r") as file:
+        lines = file.readlines()
+    for line in lines:
+        link = line.strip()  # Eliminăm caracterele de newline ("\n") de la sfârșitul fiecărei linii
+        urls.append(link)
+
+extract_products_links(file_path_prod)
+
+def extract_emails_from_file(file_path):
+    emails = []
+    with open(file_path, "r") as file:
+        for line in file:
+            # Utilizăm expresia regulată pentru a căuta adresele de e-mail
+            email_matches = re.findall(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', line)
+            if email_matches:
+                # Adăugăm adresele de e-mail găsite în listă
+                emails.extend(email_matches)
+    return emails
+
+# Exemplu de utilizare
+file_path = "adrese_email.txt"
+email_list = extract_emails_from_file(file_path)
 
 aux = 0
+price = 0
 
 siteuri = []
 
-url = ('https://www.emag.ro/aparat-foto-mirrorless-sony-alpha-a7ii-24-3-mp-full-frame-wi-fi-nfc-e-mount-iso-50-25600-'
-       'negru-obiectiv-sel2870-28-70mm-negru-ilce7m2kb-cec/pd/DFFJCMBBM/')
-
-url2 = ('https://altex.ro/aparat-foto-mirrorless-sony-a7-ii-24-3-mp-wi-fi-negru-obiectiv-sel-28-70mm-f-3-5-5-6-oss/cpd/'
-        'MLCILCE7M2KB/')
-
-url3= ('https://www.emag.ro/aparat-foto-mirrorless-sony-alpha-a7ii-body-24-3-mp-full-frame-wi-fi-nfc-e-mount-iso-50-'
-       '25600-negru-ilce7m2b-cec/pd/D6XJCMBBM/')
-
 def send_mail():
     print("!!!!!!")
+    global price
+    pret_limita = int(price)
 
     siteuri_sortate = sorted(siteuri, key=lambda x: x.get_pret())
 
@@ -28,22 +52,21 @@ def send_mail():
         titlu = i.get_titlu()
         pret = i.get_pret()
         _url = i.get_url()
-        if pret < 65000:
-            to = "sindilar.stefan@gmail.com"
+        if pret < pret_limita:
             subject = "Pretul produsului urmarit a scazut!!!"
             message = "{}\t\t\n\nPret: {}\t\t\n\nLink:\t\t\n{}".format(titlu, pret, _url)
-
-            #t = SendMail(to, subject, message)
-            #t.start()
+            for to in email_list:
+                print(to)
+                #t = SendMail(to, subject, message)
+                #t.start()
 
 def check_price():
-    emag_obj = Emag(url)
-    altex_obj = Altex(url2)
-    emag_obj2 = Emag(url3)
+    global price
+    pret_limita = int(price)
 
-    siteuri.append(emag_obj)
-    siteuri.append(altex_obj)
-    siteuri.append(emag_obj2)
+    for _url in urls:
+        site = Factory.factory(_url)
+        siteuri.append(site)
 
     siteuri_sortate = sorted(siteuri, key=lambda x: x.get_pret())
 
@@ -51,15 +74,8 @@ def check_price():
         titlu = i.get_titlu()
         pret = i.get_pret()
         _url = i.get_url()
-        if pret < 5000:
+        if pret < pret_limita:
             update_interface(titlu.strip(), pret, _url)
-
-            to = "sindilar.stefan@gmail.com"
-            subject = "Pretul produsului urmarit a scazut!!!"
-            message = "{}\t\t\n\nPret: {}\t\t\n\nLink:\t\t\n{}".format(titlu, pret, _url)
-
-            #t = SendMail(to, subject, message)
-            #t.start()
         else:
             label_n = Label(frame2, text=f"Pretul produsului cautat pe site-ul {i.get_magazin()} nu este sub pragul"
                                          f" dorit!", fg=text_color, font=("Arial", 14, "bold"),
@@ -99,7 +115,7 @@ def update_interface(title, price, _url):
     label_url.pack()
 
     link_label = Label(frame1, text=_url, fg=link_color, cursor="hand2", font=("Arial", 12, "underline"),
-                          wraplength=1000, bg=frame1["bg"])
+                          wraplength=980, bg=frame1["bg"])
     link_label.pack()
 
     label_titlu.config(text="Titlu: " + title)
@@ -134,6 +150,9 @@ frame2_width = screen_width - frame1_width
 frame1 = Frame(root, width=frame1_width, height=screen_height, bg="lightblue")
 frame1.pack(side=LEFT, fill=BOTH)
 
+label_info = Label(frame1, text="Alege numarul de mailuri trimise pe zi:", fg="black", font=("Arial", 14, "bold"),
+                   wraplength=1000, bg=frame1["bg"])
+label_info.pack()
 
 # Creează o variabilă pentru a stoca valoarea selectată în combobox
 selected_option = StringVar()
@@ -145,12 +164,40 @@ options = ["1", "2", "4", "86400"]
 combobox = ttk.Combobox(frame1, values=options, textvariable=selected_option)
 combobox.pack()
 
+label_inf = Label(frame1, text="\nIntrodu pretul maxim al produsului:", fg="black", font=("Arial", 14, "bold"),
+                   wraplength=1000, bg=frame1["bg"])
+label_inf.pack()
+def validate_input(new_value):
+    if new_value.isdigit() or new_value == "":
+        return True
+    else:
+        return False
+
+def get_entry_value():
+    global price
+    logic_pret = True
+    while logic_pret:
+        price = entry.get()
+        if price != "":
+            logic_pret = False
+        root.update()
+        print(price)
+
+validation = frame1.register(validate_input)
+
+entry = Entry(frame1, validate="key", validatecommand=(validation, "%P"))
+entry.pack()
+
+button = Button(frame1, text="Seteaza valoarea", command=get_entry_value)
+button.pack()
+
+
 def set_nr_mail():
     selected_value = selected_option.get()
     if selected_value:
         return selected_value
     else:
-        return None
+        return 0
 
 
 # Crează al doilea frame
@@ -160,19 +207,26 @@ frame2.pack(side=LEFT, fill=BOTH, expand=True)
 
 # Rulează interfața grafică în paralel cu verificarea prețului
 def run_interface():
+    global price
+    logic_pret = True
+    while logic_pret:
+        if price != 0:
+            logic_pret = False
+
     check_price()
     root.update()
 
-
     while True:
         nr = set_nr_mail()
-        if nr is not None:
+        if nr != 0:
             try:
                 tmp = 86400 / int(nr)
             except ValueError:
                 print("Valoarea selectată nu este un număr întreg!")
             send_mail()
             time.sleep(tmp)
+        root.update()
+
 
 # Pornirea interfeței grafice într-un thread separat
 interface_thread = threading.Thread(target=run_interface)

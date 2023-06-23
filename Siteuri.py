@@ -65,11 +65,16 @@ class Altex(Siteuri):
         page = requests.get(self.url, headers=headers)
         soup = BeautifulSoup(page.content, 'html.parser')
 
-        title_elements = soup.find_all(class_="jsx-8f410c0b503f5d3f")
+        #title_elements = soup.find_all(class_="jsx-8f410c0b503f5d3f")
+        title_elements = soup.find_all(class_="font-normal text-2xl md:text-36px leading-32 md:leading-46 mb-2 !text-xl"
+                                              " md:!text-[26px] !leading-26 md:!leading-36")
         if len(title_elements) >= 2:
             self.titlu = title_elements[2].get_text().strip()
         else:
-            print("Nu s-a putut găsi titlul produsului.")
+            if len(title_elements) == 1:
+                self.titlu = title_elements[0].get_text().strip()
+            else:
+                print("Nu s-a putut găsi titlul produsului.")
 
         price_element = soup.find(class_="Price-int leading-none")
         if price_element:
