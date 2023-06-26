@@ -191,6 +191,30 @@ entry.pack()
 button = Button(frame1, text="Seteaza valoarea", command=get_entry_value)
 button.pack()
 
+reset = False
+def reset_data():
+    print("Reset!")
+    global reset
+    reset = True
+    global price
+    entry.delete(0, END)  # Șterge conținutul câmpului de introducere a prețului
+    combobox.delete(0, END)
+    price = 0  # Resetează valoarea prețului la 0
+    siteuri.clear()
+
+    global frame2
+    frame2.destroy()
+    frame2 = Frame(root, width=frame2_width, height=screen_height, bg=bg_color)
+    frame2.pack(side=LEFT, fill=BOTH, expand=True)
+
+
+label_rst = Label(frame1, text="\n\nReseteaza datele introduse.", fg="black", font=("Arial", 14, "bold"),
+                   wraplength=1000, bg=frame1["bg"])
+label_rst.pack()
+
+reset_button = Button(frame1, text="Resetare", command=reset_data)
+reset_button.pack()
+
 
 def set_nr_mail():
     selected_value = selected_option.get()
@@ -205,27 +229,34 @@ frame2 = Frame(root, width=frame2_width, height=screen_height, bg=bg_color)
 frame2.pack(side=LEFT, fill=BOTH, expand=True)
 
 
+
 # Rulează interfața grafică în paralel cu verificarea prețului
 def run_interface():
-    global price
-    logic_pret = True
-    while logic_pret:
-        if price != 0:
-            logic_pret = False
-
-    check_price()
-    root.update()
-
     while True:
-        nr = set_nr_mail()
-        if nr != 0:
-            try:
-                tmp = 86400 / int(nr)
-            except ValueError:
-                print("Valoarea selectată nu este un număr întreg!")
-            send_mail()
-            time.sleep(tmp)
+        global reset
+        global price
+        logic_pret = True
+        while logic_pret:
+            if price != 0:
+                logic_pret = False
+
+        check_price()
         root.update()
+
+        run = True
+        while run:
+            if reset:
+                run = False
+                reset = False
+            nr = set_nr_mail()
+            if nr != 0:
+                try:
+                    tmp = 86400 / int(nr)
+                except ValueError:
+                    print("Valoarea selectată nu este un număr întreg!")
+                send_mail()
+                time.sleep(tmp)
+            root.update()
 
 
 # Pornirea interfeței grafice într-un thread separat
