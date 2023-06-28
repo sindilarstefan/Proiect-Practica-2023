@@ -21,7 +21,7 @@ def extract_products_links(_file_path):
     with open(_file_path, "r") as file:
         lines = file.readlines()
     for line in lines:
-        link = line.strip()  # Eliminăm caracterele de newline ("\n") de la sfârșitul fiecărei linii
+        link = line.strip()  # Elimină caracterele de newline ("\n") de la sfârșitul fiecărei linii
         urls.append(link)
 
 
@@ -32,10 +32,10 @@ def extract_emails_from_file(_file_path):
     emails = []
     with open(_file_path, "r") as file:
         for line in file:
-            # Utilizăm expresia regulată pentru a căuta adresele de e-mail
+            # Utilizez expresia regulată pentru a căuta adresele de e-mail
             email_matches = re.findall(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', line)
             if email_matches:
-                # Adăugăm adresele de e-mail găsite în listă
+                # Adăugă adresele de e-mail găsite în listă
                 emails.extend(email_matches)
     return emails
 
@@ -57,17 +57,21 @@ def send_mail():
 
     siteuri_sortate = sorted(siteuri, key=lambda x: x.get_pret())
 
+    logic = False
     for i in siteuri_sortate:
         titlu = i.get_titlu()
         pret = i.get_pret()
         _url = i.get_url()
         if pret < pret_limita:
+            logic = True
             subject = "Pretul produsului urmarit a scazut!!!"
             message = "{}\t\t\n\nPret: {}\t\t\n\nLink:\t\t\n{}".format(titlu, pret, _url)
             for to in email_list:
                 print(to)
-                #t = SendMail(to, subject, message)
-                #t.start()
+                t = SendMail(to, subject, message)
+                t.start()
+    if not logic:
+        print("NU s-a trimis niciun email!")
 
 
 def check_price():
@@ -92,8 +96,7 @@ def check_price():
                             bg=bg_color)
             print(f"Pretul produsului cautat pe site-ul {i.get_magazin()} nu este sub pragul dorit!")
             label_n.pack()
-    #frame2.update()
-    #scrollable_frame.update()
+
 
 def open_url(_url):
     webbrowser.open(_url)
@@ -215,7 +218,6 @@ combobox.pack()
 
 reset = False
 
-
 def reset_data():
     print("Reset!")
     global reset
@@ -226,10 +228,9 @@ def reset_data():
     price = 0  # Resetează valoarea prețului la 0
     siteuri.clear()
 
-    # global frame2
-    # frame2.destroy()
-    # frame2 = Frame(root, width=frame2_width, height=screen_height, bg=bg_color)
-    # frame2.pack(side=LEFT, fill=BOTH, expand=True)
+    global interrupted
+    interrupted = True
+
     for child in scrollable_frame.winfo_children():
         child.destroy()
 
@@ -247,7 +248,6 @@ frame2 = Frame(root, width=frame2_width, height=screen_height, bg=bg_color)
 frame2.pack(side=LEFT, fill=BOTH, expand=True)
 
 
-######
 # Funcția pentru a face scrolul pe cadru
 def on_frame_configure(canvas):
     canvas.configure(scrollregion=canvas.bbox("all"))
@@ -297,55 +297,55 @@ def create_price_chart():
 
     # Lista produselor cu prețurile sub pragul dorit
     produse_sub_pret = []
-    #################################################################
+
     for i, site in enumerate(siteuri):
         if site.get_pret() < pret_limita:
             produse_sub_pret.append((site.get_titlu(), site.get_pret(), site.get_magazin(), site.get_url()))
 
     if produse_sub_pret:
-        produse_sub_pret = sorted(produse_sub_pret, key=lambda x: x[1])  # Sortăm produsele după preț
+        produse_sub_pret = sorted(produse_sub_pret, key=lambda x: x[1])  # Sorteaza produsele după preț
 
         titluri = [p[0] for p in produse_sub_pret]
         preturi = [p[1] for p in produse_sub_pret]
         magazine = [p[2] for p in produse_sub_pret]
         _url = [p[3] for p in produse_sub_pret]
 
-        # Creăm figura și axa pentru graficul de bare
+        # Crează figura și axa pentru graficul de bare
         fig, ax = plt.subplots()
 
-        # Creăm graficul de bare
+        # Creaza graficul de bare
         ax.bar(titluri, preturi)
 
-        # Adăugăm etichetele pe axa x
+        # Adăugă etichetele pe axa x
         ax.set_xticks(range(len(magazine)))
         ax.set_xticklabels(magazine, rotation=45, ha='right')
 
-        # Adăugăm titlul și etichetele de axă
+        # Adăugă titlul și etichetele de axă
         ax.set_title('Produse cu prețuri sub pragul dorit')
         ax.set_xlabel('Produse')
         ax.set_ylabel('Preț (lei)')
 
-        # Adăugăm numele magazinului pe fiecare bară
+        # Adăugă numele magazinului pe fiecare bară
         for i, rect in enumerate(ax.patches):
             ax.text(rect.get_x() + rect.get_width() / 2, rect.get_height(), magazine[i],
                     ha='center', va='bottom')
 
-        # Creăm obiectul de afișare a figurii în Tkinter
+        # Creaza obiectul de afișare a figurii în Tkinter
         canvas = FigureCanvasTkAgg(fig, master=scrollable_frame)
         canvas.draw()
 
-        # Plasăm obiectul de afișare în frame2
+        # Plasă obiectul de afișare în frame2
         canvas.get_tk_widget().pack(fill=BOTH, expand=True)
         canvas.mpl_connect('button_press_event', lambda event: onclick(event, _url, ax))
 
-        # Actualizăm interfața grafică
+        # Actualiză interfața grafică
         scrollable_frame.update()
     else:
-        # Dacă nu există produse sub pragul dorit, ștergem graficul anterior (dacă există)
+        # Dacă nu există produse sub pragul dorit, șterge graficul anterior (dacă există)
         for child in scrollable_frame.winfo_children():
             child.destroy()
 
-        # Afisăm un mesaj de informare în locul graficului
+        # Afisă un mesaj de informare în locul graficului
         label_n = Label(scrollable_frame, text="Nu există produse cu prețuri sub pragul dorit.", fg="white",
                         font=("Arial", 14), bg="black")
         label_n.pack()
@@ -355,7 +355,7 @@ label_grafic = Label(frame1, text="\n\nCrează grafic.", fg="black", font=("Aria
                      bg=frame1["bg"])
 label_grafic.pack()
 
-# Adăugăm un buton în frame1 pentru a crea graficul
+# Adăugă un buton în frame1 pentru a crea graficul
 button_chart = Button(frame1, text="Crează grafic", command=create_price_chart)
 button_chart.pack()
 
@@ -366,6 +366,20 @@ label_rst.pack()
 
 reset_button = Button(frame1, text="Resetare", command=reset_data)
 reset_button.pack()
+
+
+interrupted = False
+def wait_function(tmp):
+    print("A început perioada de așteptare")
+    global interrupted
+    for i in range(tmp):
+        if interrupted:
+            print("Perioada de așteptare a fost întreruptă")
+            interrupted = False
+            return
+        # Așteptă 1 secundă
+        time.sleep(1)
+    print("A trecut perioada de așteptare")
 
 
 # Rulează interfața grafică în paralel cu verificarea prețului
@@ -381,7 +395,6 @@ def run_interface():
 
         check_price()
         root.update()
-        #frame2.update()
 
         run = True
         while run:
@@ -396,7 +409,7 @@ def run_interface():
                 except ValueError:
                     print("Valoarea selectată nu este un număr întreg!")
                 send_mail()
-                time.sleep(tmp)
+                wait_function(int(tmp))
             root.update()
 
 

@@ -1,5 +1,6 @@
 from Siteuri import Siteuri, Emag, Altex
 
+
 def factory(url):
     if "emag" in url:
         return Emag(url)

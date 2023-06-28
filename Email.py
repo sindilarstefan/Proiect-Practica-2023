@@ -3,6 +3,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import threading
 
+
 EMAIL_ADDRESS = "testproiect2023@gmail.com"
 PASSWORD = "uyeeojszslhkyshu"
 
