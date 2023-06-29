@@ -48,9 +48,9 @@ class Emag(Siteuri):
         else:
             print("Nu s-a putut găsi titlul produsului.")
 
-        price_element = soup.find(class_="product-new-price has-deal")
+        price_element = soup.find(class_="product-new-price")
         if price_element == None:
-            price_element = soup.find(class_="product-new-price")
+            price_element = soup.find(class_="product-new-price has-deal")
         if price_element:
             self.pret = price_element.get_text()
             self.pret = float(self.pret[0:5].replace(".", ""))
